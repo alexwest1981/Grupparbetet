@@ -13,6 +13,7 @@ Wigell Sushi är en mikrotjänst byggd i Spring Boot som hanterar affärslogiken
 *   **Databas**: MySQL via Spring Data JPA. Databasnamn: `wigell_sushi_db`.
 *   **Säkerhet**: Spring Security / OAuth2 Resource Server. Redo att validera JWT-tokens från Keycloak.
 *   **Övervakning**: Spring Boot Actuator & Spring Boot Admin Client.
+*   **Felhantering**: Centraliserad via `@ControllerAdvice` för konsekventa och informativa felmeddelanden.
 
 ### Konfiguration (`application.properties`)
 *   **Port**: `8582` (Enligt specifikation).
@@ -35,7 +36,7 @@ Interfaces som ärver från `JpaRepository`, vilket ger Spring Boot förmågan a
 *   `BookingRepository` & `OrderRepository`: Innehåller anpassade sökmetoder, ex: `List<Booking> findByCustomer(Customer customer)`, för att hämta rader kopplade till specifika kunder.
 
 ### API Endpoints (Filer i `controller`-paketet)
-Klasserna är annoterade med `@RestController`. Varje endpoint som skapar, uppdaterar eller tar bort något loggar händelsen (ex. "Admin created dish X"), vilket uppfyller loggningskravet.
+Klasserna är annoterade med `@RestController`. Varje endpoint som skapar, uppdaterar eller tar bort något loggar händelsen (ex. "Admin created dish X"), vilket uppfyller loggningskravet. När en resurs inte hittas, kastas en `ResourceNotFoundException` som hanteras globalt för att returnera ett standardiserat JSON-felmeddelande.
 
 #### `CustomerController.java` (Kundfunktioner)
 Hanterar det en kund kan göra. Förväntar sig USER-roll vid anrop.
@@ -58,6 +59,12 @@ Hanterar administratörens rättigheter (komplett CRUD). Förväntar sig ADMIN-r
 *   **Rätter (`/dishes`)**: `GET` (alla), `GET` (specifik), `POST` (skapa), `PUT` (uppdatera), `DELETE` (ta bort).
 *   **Lokaler (`/rooms`)**: `GET` (alla), `GET` (specifik), `POST` (skapa), `PUT` (uppdatera), `DELETE` (ta bort).
 *   **Bokningar/Beställningar**: `GET /api/v1/orders` (alla), `GET /api/v1/orders/{id}` (specifik), `GET /api/v1/bookings` (alla).
+
+### Felhantering (Global Exception Handler)
+För att hantera fel på ett konsekvent och informativt sätt, har en global felhanterare implementerats. Detta följer "best practice" för moderna REST API:er.
+*   **`exception/ResourceNotFoundException.java`**: En anpassad `RuntimeException` som kastas från controllers när en specifik resurs (t.ex. en kund med ett visst ID) inte kan hittas i databasen.
+*   **`exception/ErrorResponse.java`**: En klass som definierar den JSON-struktur som returneras till klienten vid ett fel. Den innehåller fält för `timestamp`, `status` (HTTP-kod som en `int`), `error` (HTTP-statusnamn), `message` (detaljerat felmeddelande) och `path` (vilken URL som anropades).
+*   **`exception/GlobalExceptionHandler.java`**: En `@ControllerAdvice`-klass som fungerar som ett skyddsnät för hela applikationen. Den innehåller `@ExceptionHandler`-metoder som fångar upp specifika exceptions (som `ResourceNotFoundException`) och bygger ett `ErrorResponse`-objekt som returneras till klienten med korrekt HTTP-statuskod. Detta säkerställer att klienten alltid får ett förutsägbart och maskinläsbart felmeddelande.
 
 ---
 
@@ -94,3 +101,4 @@ Dashboarden är ett webbgränssnitt som övervakar hälsan och statusen för kon
 2.  **Övervakning (Actuator & Admin)**: Sushi API är en "klient" till Dashboarden. Genom `spring-boot-admin-starter-client` vet Sushi API om att Dashboarden finns på port 9090. När Sushi API startar pingar den Dashboarden och säger "Här är jag". Dashboarden använder därefter Actuator-endpoints (`/actuator/health` och `/actuator/info`) på Sushi API:et för att hämta CPU-användning, databasstatus, och loggar direkt in i webbgränssnittet.
 3.  **Fil-Loggning**: Om ett fel inträffar eller något raderas, skriver Sushi API:et ner detta i `logs/sushi-api.log`. Om något sker i övervakningssystemet sparas det i `logs/portal-dashboard.log`. Detta gör systemet spårbart och stabilt (VG-krav).
 4.  **Framtidssäkrat**: Koden är nu helt redo att kopplas ihop med teamets gemensamma API Gateway och Valutakonverterare, då endpoints och datamodell följer specifikation och Returnerar rätt HTTP-koder.
+5.  **Felhantering**: Om ett anrop görs till Sushi API för en resurs som inte finns (t.ex. `/api/v1/customers/999`), returneras inte längre ett tomt svar. Istället returneras ett standardiserat JSON-objekt med detaljer om felet, vilket underlättar felsökning för klient-utvecklare.

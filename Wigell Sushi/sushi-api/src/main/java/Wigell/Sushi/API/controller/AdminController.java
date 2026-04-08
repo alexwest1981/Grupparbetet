@@ -5,6 +5,7 @@ import Wigell.Sushi.API.entity.Dish;
 import Wigell.Sushi.API.entity.Room;
 import Wigell.Sushi.API.entity.Order;
 import Wigell.Sushi.API.entity.Booking;
+import Wigell.Sushi.API.exception.ResourceNotFoundException;
 import Wigell.Sushi.API.repository.CustomerRepository;
 import Wigell.Sushi.API.repository.DishRepository;
 import Wigell.Sushi.API.repository.RoomRepository;
@@ -18,7 +19,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
-// import java.util.Optional; // Removed unused import
 
 @RestController
 @RequestMapping("/api/v1")
@@ -66,49 +66,46 @@ public class AdminController {
 
     @PutMapping("/customers/{customerId}")
     public ResponseEntity<Customer> updateCustomer(@PathVariable Long customerId, @RequestBody Customer customerDetails) {
-        return customerRepository.findById(customerId)
-                .map(customer -> {
-                    customer.setName(customerDetails.getName());
-                    customer.setAddress(customerDetails.getAddress());
-                    Customer updated = customerRepository.save(customer);
-                    logger.info("Admin updated customer ID: {} ({})", customerId, updated.getUsername());
-                    return ResponseEntity.ok(updated);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId));
+
+        customer.setName(customerDetails.getName());
+        customer.setAddress(customerDetails.getAddress());
+        Customer updated = customerRepository.save(customer);
+        logger.info("Admin updated customer ID: {} ({})", customerId, updated.getUsername());
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/customers/{customerId}")
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long customerId) {
-        if (customerRepository.existsById(customerId)) {
-            customerRepository.deleteById(customerId);
-            logger.info("Admin deleted customer ID: {}", customerId);
-            return ResponseEntity.noContent().build();
+        if (!customerRepository.existsById(customerId)) {
+            throw new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId);
         }
-        return ResponseEntity.notFound().build();
+        customerRepository.deleteById(customerId);
+        logger.info("Admin deleted customer ID: {}", customerId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/customers/{customerId}/addresses")
     public ResponseEntity<Customer> addAddress(@PathVariable Long customerId, @RequestBody String address) {
-        return customerRepository.findById(customerId)
-                .map(customer -> {
-                    customer.setAddress(address);
-                    customerRepository.save(customer);
-                    logger.info("Admin added/updated address for customer ID: {}", customerId);
-                    return ResponseEntity.ok(customer);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId));
+
+        customer.setAddress(address);
+        customerRepository.save(customer);
+        logger.info("Admin added/updated address for customer ID: {}", customerId);
+        return ResponseEntity.ok(customer);
     }
 
     @DeleteMapping("/customers/{customerId}/addresses/{addressId}")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long customerId, @PathVariable Long addressId) {
-        return customerRepository.findById(customerId)
-                .map(customer -> {
-                    customer.setAddress(null);
-                    customerRepository.save(customer);
-                    logger.info("Admin deleted address for customer {} (addressId: {})", customerId, addressId);
-                    return ResponseEntity.noContent().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId));
+
+        customer.setAddress(null);
+        customerRepository.save(customer);
+        logger.info("Admin deleted address for customer {} (addressId: {})", customerId, addressId);
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -122,10 +119,10 @@ public class AdminController {
 
     @GetMapping("/dishes/{dishId}")
     public ResponseEntity<Dish> getDishById(@PathVariable Long dishId) {
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande rätt med id: " + dishId));
         logger.info("Admin requested dish with ID: {}", dishId);
-        return dishRepository.findById(dishId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(dish);
     }
 
     @PostMapping("/dishes")
@@ -143,25 +140,24 @@ public class AdminController {
 
     @PutMapping("/dishes/{dishId}")
     public ResponseEntity<Dish> updateDish(@PathVariable Long dishId, @RequestBody Dish dishDetails) {
-        return dishRepository.findById(dishId)
-                .map(dish -> {
-                    dish.setName(dishDetails.getName());
-                    dish.setPriceSek(dishDetails.getPriceSek());
-                    Dish updated = dishRepository.save(dish);
-                    logger.info("Admin updated dish ID: {} ({})", dishId, updated.getName());
-                    return ResponseEntity.ok(updated);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande rätt med id: " + dishId));
+
+        dish.setName(dishDetails.getName());
+        dish.setPriceSek(dishDetails.getPriceSek());
+        Dish updated = dishRepository.save(dish);
+        logger.info("Admin updated dish ID: {} ({})", dishId, updated.getName());
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/dishes/{dishId}")
     public ResponseEntity<Void> deleteDish(@PathVariable Long dishId) {
-        if (dishRepository.existsById(dishId)) {
-            dishRepository.deleteById(dishId);
-            logger.info("Admin deleted dish ID: {}", dishId);
-            return ResponseEntity.noContent().build();
+        if (!dishRepository.existsById(dishId)) {
+            throw new ResourceNotFoundException("Hittade ingen matchande rätt med id: " + dishId);
         }
-        return ResponseEntity.notFound().build();
+        dishRepository.deleteById(dishId);
+        logger.info("Admin deleted dish ID: {}", dishId);
+        return ResponseEntity.noContent().build();
     }
 
     // --- Room Endpoints ---
@@ -174,10 +170,10 @@ public class AdminController {
 
     @GetMapping("/rooms/{roomId}")
     public ResponseEntity<Room> getRoomById(@PathVariable Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade inget matchande rum med id: " + roomId));
         logger.info("Admin requested room with ID: {}", roomId);
-        return roomRepository.findById(roomId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(room);
     }
 
     @PostMapping("/rooms")
@@ -195,26 +191,25 @@ public class AdminController {
 
     @PutMapping("/rooms/{roomId}")
     public ResponseEntity<Room> updateRoom(@PathVariable Long roomId, @RequestBody Room roomDetails) {
-        return roomRepository.findById(roomId)
-                .map(room -> {
-                    room.setName(roomDetails.getName());
-                    room.setMaxGuests(roomDetails.getMaxGuests());
-                    room.setTechnicalEquipment(roomDetails.getTechnicalEquipment());
-                    Room updated = roomRepository.save(room);
-                    logger.info("Admin updated room ID: {} ({})", roomId, updated.getName());
-                    return ResponseEntity.ok(updated);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade inget matchande rum med id: " + roomId));
+
+        room.setName(roomDetails.getName());
+        room.setMaxGuests(roomDetails.getMaxGuests());
+        room.setTechnicalEquipment(roomDetails.getTechnicalEquipment());
+        Room updated = roomRepository.save(room);
+        logger.info("Admin updated room ID: {} ({})", roomId, updated.getName());
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/rooms/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId) {
-        if (roomRepository.existsById(roomId)) {
-            roomRepository.deleteById(roomId);
-            logger.info("Admin deleted room ID: {}", roomId);
-            return ResponseEntity.noContent().build();
+        if (!roomRepository.existsById(roomId)) {
+            throw new ResourceNotFoundException("Hittade inget matchande rum med id: " + roomId);
         }
-        return ResponseEntity.notFound().build();
+        roomRepository.deleteById(roomId);
+        logger.info("Admin deleted room ID: {}", roomId);
+        return ResponseEntity.noContent().build();
     }
 
     // --- Order Endpoints ---
@@ -227,10 +222,10 @@ public class AdminController {
 
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande beställning med id: " + orderId));
         logger.info("Admin requested order with ID: {}", orderId);
-        return orderRepository.findById(orderId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(order);
     }
 
     // --- Booking Endpoints (Admin) ---

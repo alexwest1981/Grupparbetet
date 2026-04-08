@@ -3,6 +3,7 @@ package Wigell.Sushi.API.controller;
 import Wigell.Sushi.API.entity.Booking;
 import Wigell.Sushi.API.entity.Order;
 import Wigell.Sushi.API.entity.Customer;
+import Wigell.Sushi.API.exception.ResourceNotFoundException;
 import Wigell.Sushi.API.repository.BookingRepository;
 import Wigell.Sushi.API.repository.DishRepository;
 import Wigell.Sushi.API.repository.OrderRepository;
@@ -16,7 +17,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -80,13 +80,8 @@ public class CustomerController {
 
     @PatchMapping("/bookings/{bookingId}")
     public ResponseEntity<Booking> updateBooking(@PathVariable Long bookingId, @RequestBody Booking bookingUpdates) {
-        Optional<Booking> optionalBooking = bookingRepository.findById(bookingId);
-
-        if (optionalBooking.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Booking existingBooking = optionalBooking.get();
+        Booking existingBooking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande bokning med id: " + bookingId));
 
         // Uppdatera endast tillåtna fält enligt kravspecifikationen: 
         // datum, antal rätter, lokal, önskad förtäring, teknisk utrustning
@@ -121,11 +116,10 @@ public class CustomerController {
     // Se tidigare och aktiva bokningar GET /api/v1/bookings?customerId={customerId}
     @GetMapping(value = "/bookings", params = "customerId")
     public ResponseEntity<List<Booking>> getBookingsByCustomerId(@RequestParam Long customerId) {
-        Optional<Customer> customer = customerRepository.findById(customerId);
-        if (customer.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        List<Booking> bookings = bookingRepository.findByCustomer(customer.get());
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId));
+        
+        List<Booking> bookings = bookingRepository.findByCustomer(customer);
         logger.info("Customer requested bookings for customerId {}", customerId);
         return ResponseEntity.ok(bookings);
     }
@@ -133,11 +127,10 @@ public class CustomerController {
     // Hämta beställningar GET /api/v1/orders?customerId={customerId}
     @GetMapping(value = "/orders", params = "customerId")
     public ResponseEntity<List<Order>> getOrdersByCustomerId(@RequestParam Long customerId) {
-        Optional<Customer> customer = customerRepository.findById(customerId);
-        if (customer.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        List<Order> orders = orderRepository.findByCustomer(customer.get());
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande kund med id: " + customerId));
+                
+        List<Order> orders = orderRepository.findByCustomer(customer);
         logger.info("Customer requested orders for customerId {}", customerId);
         return ResponseEntity.ok(orders);
     }
