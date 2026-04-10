@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.13</version>
+		<version>3.4.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.wigell</groupId>
@@ -28,7 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>24</java.version>
-		<spring-boot-admin.version>3.5.8</spring-boot-admin.version>
+		<spring-boot-admin.version>3.4.4</spring-boot-admin.version>
 	</properties>
 	<dependencies>
 		<dependency>
