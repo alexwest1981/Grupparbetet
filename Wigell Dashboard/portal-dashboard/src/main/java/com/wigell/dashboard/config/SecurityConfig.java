@@ -7,9 +7,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
 @Configuration
 @EnableWebSecurity
@@ -23,43 +20,30 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        SavedRequestAwareAuthenticationSuccessHandler successHandler = new SavedRequestAwareAuthenticationSuccessHandler();
-        successHandler.setTargetUrlParameter("redirectTo");
-        successHandler.setDefaultTargetUrl(adminContextPath + "/");
 
         http
             .authorizeHttpRequests((authorizeRequests) ->
                 authorizeRequests
                     .requestMatchers(adminContextPath + "/assets/**").permitAll()
                     .requestMatchers(adminContextPath + "/login").permitAll()
-                    .requestMatchers(adminContextPath + "/actuator/**").permitAll() // Allow actuator endpoints
+                    .requestMatchers(adminContextPath + "/actuator/**").permitAll() 
+                    .requestMatchers(adminContextPath + "/instances", adminContextPath + "/instances/**").permitAll()
                     .anyRequest().authenticated()
             )
+            // Aktiverar OIDC / OAuth2 inloggning (Skickar användaren till Keycloak-skärmen)
+            .oauth2Login(Customizer.withDefaults())
+            
+            // Tillåter API-anrop med Bearer token (om något annat system anropar dashboarden)
             .oauth2ResourceServer((oauth2) -> oauth2
                 .jwt(Customizer.withDefaults())
-            )
-            .formLogin((formLogin) -> formLogin
-                .loginPage(adminContextPath + "/login")
-                .successHandler(successHandler)
             )
             .logout((logout) -> logout
                 .logoutUrl(adminContextPath + "/logout")
             )
             .csrf((csrf) -> csrf
-                .ignoringRequestMatchers(adminContextPath + "/logout", adminContextPath + "/actuator/**")
+                .ignoringRequestMatchers(adminContextPath + "/logout", adminContextPath + "/actuator/**", adminContextPath + "/instances", adminContextPath + "/instances/**")
             );
 
         return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); // Assuming Keycloak uses 'roles' claim for roles
-        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_"); // Prefix for Spring Security roles
-
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-        return jwtAuthenticationConverter;
     }
 }
