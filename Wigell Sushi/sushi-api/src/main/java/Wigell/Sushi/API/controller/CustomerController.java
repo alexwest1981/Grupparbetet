@@ -1,7 +1,10 @@
 package Wigell.Sushi.API.controller;
 
 import Wigell.Sushi.API.entity.Booking;
+import Wigell.Sushi.API.entity.BookingDish;
+import Wigell.Sushi.API.entity.Dish;
 import Wigell.Sushi.API.entity.Order;
+import Wigell.Sushi.API.entity.OrderDish;
 import Wigell.Sushi.API.entity.Customer;
 import Wigell.Sushi.API.exception.ResourceNotFoundException;
 import Wigell.Sushi.API.repository.BookingRepository;
@@ -13,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -27,25 +31,57 @@ public class CustomerController {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final RoomRepository roomRepository;
+    private final DishRepository dishRepository;
 
     public CustomerController(BookingRepository bookingRepository,
                               OrderRepository orderRepository,
                               CustomerRepository customerRepository,
-                              RoomRepository roomRepository) {
+                              RoomRepository roomRepository,
+                              DishRepository dishRepository) {
         this.bookingRepository = bookingRepository;
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.roomRepository = roomRepository;
+        this.dishRepository = dishRepository;
     }
 
 
     // Beställ takeaway POST /api/v1/orders
     @PostMapping("/orders")
     public ResponseEntity<Order> createOrder(@RequestBody Order order) {
-        // Logik för att spara ordern och dess rätter
+        double totalSek = 0;
+
         if (order.getOrderDishes() != null) {
-            order.getOrderDishes().forEach(od -> od.setOrder(order));
+            for (OrderDish od : order.getOrderDishes()) {
+                od.setOrder(order);
+                if (od.getDish() != null && od.getDish().getId() != null) {
+                    Dish dish = dishRepository.findById(od.getDish().getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen maträtt med ID " + od.getDish().getId()));
+                    totalSek += dish.getPriceSek() * od.getQuantity();
+                    od.setDish(dish); // Sätt den riktiga entiteten från databasen
+                }
+            }
         }
+        order.setTotalPriceSek(totalSek);
+
+        // --- EXTERNT ANROP TILL VALUTATJÄNSTEN (VG-krav) ---
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            // OBS! ÄNDRA 8081 TILL DEN PORT KRISTINA ANVÄNDER, OCH ÄNDRA URL:EN SÅ DEN MATCHAR HENNES API!
+            String currencyApiUrl = "http://localhost:8081/api/convert?amount=" + totalSek + "&from=SEK&to=JPY";
+            
+            // Antar att hennes API returnerar en ren siffra (Double). Om det är JSON måste detta ändras till en Map eller DTO.
+            Double convertedPriceJpy = restTemplate.getForObject(currencyApiUrl, Double.class);
+            if (convertedPriceJpy != null) {
+                order.setTotalPriceJpy(convertedPriceJpy);
+                logger.info("Valutakonvertering lyckades: {} SEK blev {} JPY", totalSek, convertedPriceJpy);
+            }
+        } catch (Exception e) {
+            logger.error("Kunde inte nå valutatjänsten. Sätter JPY-priset till 0. Fel: {}", e.getMessage());
+            order.setTotalPriceJpy(0.0);
+        }
+        // ---------------------------------------------------
+
         Order savedOrder = orderRepository.save(order);
         logger.info("Customer {} created order {}", 
             savedOrder.getCustomer() != null ? savedOrder.getCustomer().getUsername() : "unknown", 
@@ -62,9 +98,38 @@ public class CustomerController {
     // Reservera lokal POST /api/v1/bookings
     @PostMapping("/bookings")
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
+        double totalSek = 0;
+
         if (booking.getBookingDishes() != null) {
-            booking.getBookingDishes().forEach(bd -> bd.setBooking(booking));
+            for (BookingDish bd : booking.getBookingDishes()) {
+                bd.setBooking(booking);
+                if (bd.getDish() != null && bd.getDish().getId() != null) {
+                    Dish dish = dishRepository.findById(bd.getDish().getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen maträtt med ID " + bd.getDish().getId()));
+                    totalSek += dish.getPriceSek() * bd.getQuantity();
+                    bd.setDish(dish);
+                }
+            }
         }
+        booking.setTotalPriceSek(totalSek);
+
+        // --- EXTERNT ANROP TILL VALUTATJÄNSTEN (VG-krav) ---
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            // OBS! ÄNDRA 8081 TILL DEN PORT KRISTINA ANVÄNDER, OCH ÄNDRA URL:EN SÅ DEN MATCHAR HENNES API!
+            String currencyApiUrl = "http://localhost:8081/api/convert?amount=" + totalSek + "&from=SEK&to=JPY";
+            
+            Double convertedPriceJpy = restTemplate.getForObject(currencyApiUrl, Double.class);
+            if (convertedPriceJpy != null) {
+                booking.setTotalPriceJpy(convertedPriceJpy);
+                logger.info("Valutakonvertering lyckades: {} SEK blev {} JPY", totalSek, convertedPriceJpy);
+            }
+        } catch (Exception e) {
+            logger.error("Kunde inte nå valutatjänsten. Sätter JPY-priset till 0. Fel: {}", e.getMessage());
+            booking.setTotalPriceJpy(0.0);
+        }
+        // ---------------------------------------------------
+
         Booking savedBooking = bookingRepository.save(booking);
         logger.info("Customer {} created booking {}", 
             savedBooking.getCustomer() != null ? savedBooking.getCustomer().getUsername() : "unknown", 
@@ -83,9 +148,6 @@ public class CustomerController {
         Booking existingBooking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen matchande bokning med id: " + bookingId));
 
-        // Uppdatera endast tillåtna fält enligt kravspecifikationen: 
-        // datum, antal rätter, lokal, önskad förtäring, teknisk utrustning
-        
         if (bookingUpdates.getBookingDate() != null) {
             existingBooking.setBookingDate(bookingUpdates.getBookingDate());
         }
@@ -98,13 +160,34 @@ public class CustomerController {
         if (bookingUpdates.getTechnicalEquipment() != null) {
             existingBooking.setTechnicalEquipment(bookingUpdates.getTechnicalEquipment());
         }
+        
+        // Om rätterna uppdateras måste vi räkna om priset!
         if (bookingUpdates.getBookingDishes() != null && !bookingUpdates.getBookingDishes().isEmpty()) {
-            // För enkelhetens skull ersätter vi hela listan
             existingBooking.getBookingDishes().clear();
-            bookingUpdates.getBookingDishes().forEach(bd -> {
+            double nyTotalSek = 0;
+            
+            for (BookingDish bd : bookingUpdates.getBookingDishes()) {
                 bd.setBooking(existingBooking);
+                if (bd.getDish() != null && bd.getDish().getId() != null) {
+                    Dish dish = dishRepository.findById(bd.getDish().getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Hittade ingen maträtt med ID " + bd.getDish().getId()));
+                    nyTotalSek += dish.getPriceSek() * bd.getQuantity();
+                    bd.setDish(dish);
+                }
                 existingBooking.getBookingDishes().add(bd);
-            });
+            }
+            existingBooking.setTotalPriceSek(nyTotalSek);
+            
+            // Gör nytt anrop till Kristina för att räkna om JPY-priset!
+            try {
+                RestTemplate restTemplate = new RestTemplate();
+                String currencyApiUrl = "http://localhost:8081/api/convert?amount=" + nyTotalSek + "&from=SEK&to=JPY";
+                Double convertedPriceJpy = restTemplate.getForObject(currencyApiUrl, Double.class);
+                existingBooking.setTotalPriceJpy(convertedPriceJpy != null ? convertedPriceJpy : 0.0);
+            } catch (Exception e) {
+                logger.error("Kunde inte nå valutatjänsten vid uppdatering. Sätter JPY-priset till 0.");
+                existingBooking.setTotalPriceJpy(0.0);
+            }
         }
 
         Booking savedBooking = bookingRepository.save(existingBooking);
