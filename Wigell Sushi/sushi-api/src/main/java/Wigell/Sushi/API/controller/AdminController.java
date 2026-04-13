@@ -111,11 +111,7 @@ public class AdminController {
 
     // --- Dish Endpoints ---
 
-    @GetMapping("/dishes")
-    public List<Dish> getAllDishes() {
-        logger.info("Admin requested all dishes.");
-        return dishRepository.findAll();
-    }
+    // Observera: @GetMapping("/dishes") finns i CustomerController för att undvika konflikter
 
     @GetMapping("/dishes/{dishId}")
     public ResponseEntity<Dish> getDishById(@PathVariable Long dishId) {
