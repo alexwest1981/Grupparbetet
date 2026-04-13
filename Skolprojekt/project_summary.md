@@ -11,9 +11,9 @@ För att förstå koden måste man först förstå hur datan reser genom systeme
 ### Flöde A: En kund skapar en bokning (Valuta-flödet)
 1. **Inloggning:** Kunden använder Postman för att skicka sitt användarnamn och lösenord till **Keycloak**. Keycloak verifierar och skickar tillbaka en `access_token` (en "passerbricka").
 2. **Anropet:** Kunden skickar en `POST` till Sushi API:et (`/api/v1/bookings`) och bifogar sin token samt en JSON-kropp med vilka rätter de vill ha.
-3. **Säkerhetskontroll:** Sushi API:ets Spring Security-filter fångar anropet. Den tittar på tokenen och frågar Keycloak i bakgrunden: "Är den här äkta?". Om ja, släpps anropet fram till `CustomerController`.
+3. **Säkerhetskontroll (Auktorisering):** Sushi API:ets Spring Security-filter (`SecurityConfig.java`) fångar anropet. Den använder `CustomJwtAuthenticationConverter` för att titta inuti Keycloak-tokenen. Hittar den rollen `USER` (eller `ADMIN`), släpps anropet fram till `CustomerController`. Saknas rollen returneras `403 Forbidden`.
 4. **Beräkning (SEK):** `CustomerController` loopar igenom alla maträtter kunden skickat in. Den pratar med `DishRepository` för att hämta det *äkta* priset från databasen (så kunden inte kan ljuga om priset) och summerar detta till en total summa i SEK.
-5. **Externt API-anrop (JPY):** Innan bokningen sparas, pausar `CustomerController`. Den använder en `RestTemplate` för att skicka totalsumman i SEK till **Kristinas Valutakonverterare (Mikrotjänst 2)**. Kristinas API räknar om detta och skickar tillbaka priset i Japanska Yen (JPY).
+5. **Externt API-anrop (JPY):** Innan bokningen sparas, pausar `CustomerController`. Den använder en `RestTemplate` för att skicka totalsumman i SEK till **Kristinas Valutakonverterare (Mikrotjänst 2)**. Kristinas API räknar om detta och skickar tillbaka priset i Japanska Yen (JPY). Om hennes API ligger nere loggas ett fel och JPY-priset sätts till 0.0.
 6. **Spara:** `CustomerController` tar både SEK-priset och JPY-priset, lägger in dem i `Booking`-objektet och skickar det till `BookingRepository` som sparar det permanent i MySQL-databasen.
 7. **Svar:** Kunden får tillbaka ett `201 Created` och hela den sparade bokningen (inklusive priset i båda valutorna) visas på skärmen.
 8. **Loggning:** I samma sekund skriver systemet en rad i filen `logs/sushi-api.log` om att en bokning skapats (VG-krav).
@@ -32,12 +32,12 @@ Detta är själva hjärtat av din kod. Filerna är uppdelade i mappar (paket) ba
 ### 📂 Paketet: `controller` (Gränssnittet utåt)
 Det är här alla API-anrop (GET, POST, etc.) hamnar först. Controllernas enda jobb är att ta emot trafik, samordna logiken och skicka tillbaka svar.
 
-*   **`CustomerController.java`**: Hanterar allt som en kund (USER) får göra.
-    *   `getAllDishes()`: Hämtar menyn.
+*   **`CustomerController.java`**: Hanterar allt som en kund (`USER`) och administratör (`ADMIN`) får göra gemensamt.
+    *   `getAllDishes()`: Hämtar menyn (Tillåtet för både USER och ADMIN).
     *   `createOrder()` & `createBooking()`: Det är **HÄR** den tunga VG-logiken ligger. Här räknas SEK-priset ut, och här finns `RestTemplate`-anropet som pratar med Kristinas valuta-API för att hämta JPY-priset.
     *   `updateBooking()`: Uppdaterar en bokning. Om kunden ändrar maträtterna, räknar denna metod automatiskt om priset och anropar Kristinas API igen!
     *   `getBookingsByCustomerId()` / `getOrdersByCustomerId()`: Hämtar historik.
-*   **`AdminController.java`**: Hanterar allt administratören (ADMIN) får göra (skapa/ändra rätter, lokaler, kunder). Den består uteslutande av rena CRUD-operationer (Create, Read, Update, Delete) som pratar direkt med databasen.
+*   **`AdminController.java`**: Hanterar allt som *enbart* administratören (`ADMIN`) får göra (skapa/ändra rätter, lokaler, kunder). Den består uteslutande av rena CRUD-operationer (Create, Read, Update, Delete) som pratar direkt med databasen.
 
 ### 📂 Paketet: `entity` (Databasens struktur)
 Klasserna här motsvarar exakt hur tabellerna i MySQL-databasen ser ut.
@@ -59,8 +59,13 @@ Detta är ett VG-krav/Best Practice för att API:et inte ska krascha fult om nå
 *   **`ErrorResponse.java`**: Mallen för hur ett felmeddelande ska se ut (Vilken tid, statuskod 404, och det specifika felmeddelandet).
 *   **`GlobalExceptionHandler.java`**: En övervakare (`@ControllerAdvice`). När någon kod någonstans kastar en `ResourceNotFoundException`, fångar denna klass upp felet i luften, packar in det i vår `ErrorResponse`-mall och skickar tillbaka ett snyggt JSON-svar till Postman.
 
-### ⚙️ Konfiguration
-*   **`src/main/resources/application.properties`**: Här ställer vi in vilken port API:et körs på (8582), inloggningsuppgifter till MySQL, vilken Keycloak-server som ska användas för säkerhet, och instruktioner för att logga alla händelser till filen `logs/sushi-api.log`.
+### 📂 Paketet: `config` (Säkerhet & Bönor)
+*   **`SecurityConfig.java`**: Låser API:et. Den definierar att endast `ADMIN` får pilla på `/rooms`, `/customers` och skapa/ändra i `/dishes`. Den tillåter både `ADMIN` och `USER` att läsa `/dishes` och hantera `/bookings` och `/orders`.
+*   **`CustomJwtAuthenticationConverter.java`**: En översättare. Eftersom Keycloak lägger sina roller djupt inne i tokenen under `realm_access.roles`, hjälper denna klass Spring Security att hitta dem och lägga till prefixet `ROLE_` (vilket krävs för att `hasRole("ADMIN")` ska fungera).
+
+### ⚙️ Konfiguration & Startdata
+*   **`src/main/resources/application.properties`**: Här ställer vi in vilken port API:et körs på (8582), inloggningsuppgifter till MySQL, vilken Keycloak-server som ska användas för säkerhet, och instruktioner för att logga alla händelser till filen `logs/sushi-api.log`. Här säger vi även åt Spring Boot att vänta på att tabellerna skapats innan den kör `data.sql`.
+*   **`src/main/resources/data.sql`**: Innehåller färdiga SQL `INSERT IGNORE`-satser. Varje gång API:et startar fylls databasen automatiskt med 5 kunder, 5 rätter, 3 lokaler och 2 beställningar (enligt kravspecifikationen) så att systemet är redo för testning och redovisning direkt.
 
 ---
 
@@ -75,14 +80,16 @@ Detta projekt är mycket mindre, eftersom det inte innehåller någon egen affä
     *   Den innehåller ett undantag: `.requestMatchers("/instances").permitAll()`. Detta säkerställer att Sushi API:et (och framtida API:er) får skicka sin status till dashboarden *utan* att behöva logga in med Keycloak.
 
 ### ⚙️ Konfiguration
-*   **`src/main/resources/application.properties`**: Här sätts porten (9090). Det viktigaste här är dock inställningarna för **OAuth2 Client**. Här har vi klistrat in url:erna till `wigell-realm` och angett vår `client-secret`. Det är dessa inställningar som `SecurityConfig.java` använder för att veta exakt vilken Keycloak-server den ska skicka användarna till.
-*   **`pom.xml`**: Här har vi lagt till beroenden för säkerhet (`spring-boot-starter-security`, `spring-security-oauth2-client`) för att koden i `SecurityConfig` överhuvudtaget ska fungera.
+*   **`src/main/resources/application.properties`**: Här sätts porten (9090). Det viktigaste här är dock inställningarna för **OAuth2 Client**. Här har vi klistrat in url:erna till `wigell-realm` och angett vår `client-secret`. Det är dessa inställningar som `SecurityConfig.java` använder för att veta exakt vilken Keycloak-server den ska skicka användarna till vid inloggning. Här definieras också `logs/portal-dashboard.log` för fil-loggningen.
+*   **`pom.xml`**: Här har vi lagt till beroenden för säkerhet (`spring-boot-starter-security`, `spring-security-oauth2-client`) för att koden i `SecurityConfig` överhuvudtaget ska fungera, samt angett Java 24 och korrekta Spring Boot-versioner (3.4.3).
 
 ---
 
 ## Sammanfattning för Redovisningen
 Om du får en fråga om **var** en specifik sak sker:
-*   **Var pratar ni med Keycloak?** -> I `application.properties` (för inställningar) och `SecurityConfig.java` (för dashboard-inloggning). Sushi API kollar bara inkommande tokens passivt.
-*   **Var pratar ni med Valutatjänsten?** -> Inne i `CustomerController.java` via en `RestTemplate`.
-*   **Varför kraschar det inte när man söker på fel ID?** -> För att `GlobalExceptionHandler.java` fångar felet och bygger ett snyggt 404-svar.
-*   **Hur vet Dashboarden om Sushi API:et?** -> Sushi API:et har `spring-boot-admin-starter-client` i sin `pom.xml`, vilket gör att den aktivt "ringer hem" till Dashboarden på port 9090 och anmäler sin existens.
+*   **Var kollar ni rollerna (ADMIN/USER)?** -> I `config/SecurityConfig.java` inuti Sushi API:et.
+*   **Var pratar ni med Keycloak?** -> I `application.properties` (för URL:er) och `SecurityConfig.java` (för att aktivera skyddet). Sushi API kollar inkommande tokens passivt, medan Dashboarden aktivt skickar användaren till Keycloak-inloggningen.
+*   **Var pratar ni med Valutatjänsten?** -> Inne i `CustomerController.java` via en `RestTemplate` när en order eller bokning sparas/uppdateras.
+*   **Varför kraschar det inte när man söker på fel ID?** -> För att `GlobalExceptionHandler.java` i `exception`-paketet fångar felet och bygger ett standardiserat 404 JSON-svar.
+*   **Hur vet Dashboarden om Sushi API:et?** -> Sushi API:et har `spring-boot-admin-starter-client` i sin `pom.xml` och URL:en till dashboarden i `application.properties`, vilket gör att den aktivt "ringer hem" till Dashboarden på port 9090 och anmäler sin existens via den öppna `/instances`-länken.
+*   **Var ligger er startdata?** -> I `src/main/resources/data.sql`.
