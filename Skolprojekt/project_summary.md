@@ -27,7 +27,7 @@ För att förstå koden måste man först förstå hur datan reser genom systeme
 
 ## 2. Wigell Sushi API - Vad exakt gör filerna?
 
-Detta är själva hjärtat av din kod. Filerna är uppdelade i mappar (paket) baserat på deras ansvarsområde.
+Detta är själva hjärtat av koden. Filerna är uppdelade i mappar (paket) baserat på deras ansvarsområde.
 
 ### 📂 Paketet: `controller` (Gränssnittet utåt)
 Det är här alla API-anrop (GET, POST, etc.) hamnar först. Controllernas enda jobb är att ta emot trafik, samordna logiken och skicka tillbaka svar.
@@ -86,10 +86,10 @@ Detta projekt är mycket mindre, eftersom det inte innehåller någon egen affä
 ---
 
 ## Sammanfattning för Redovisningen
-Om du får en fråga om **var** en specifik sak sker:
-*   **Var kollar ni rollerna (ADMIN/USER)?** -> I `config/SecurityConfig.java` inuti Sushi API:et.
-*   **Var pratar ni med Keycloak?** -> I `application.properties` (för URL:er) och `SecurityConfig.java` (för att aktivera skyddet). Sushi API kollar inkommande tokens passivt, medan Dashboarden aktivt skickar användaren till Keycloak-inloggningen.
-*   **Var pratar ni med Valutatjänsten?** -> Inne i `CustomerController.java` via en `RestTemplate` när en order eller bokning sparas/uppdateras.
+**Var** en specifik sak sker:
+*   **Var kollar vi rollerna (ADMIN/USER)?** -> I `config/SecurityConfig.java` inuti Sushi API:et.
+*   **Var pratar vi med Keycloak?** -> I `application.properties` (för URL:er) och `SecurityConfig.java` (för att aktivera skyddet). Sushi API kollar inkommande tokens passivt, medan Dashboarden aktivt skickar användaren till Keycloak-inloggningen.
+*   **Var pratar vi med Valutatjänsten?** -> Inne i `CustomerController.java` via en `RestTemplate` när en order eller bokning sparas/uppdateras.
 *   **Varför kraschar det inte när man söker på fel ID?** -> För att `GlobalExceptionHandler.java` i `exception`-paketet fångar felet och bygger ett standardiserat 404 JSON-svar.
 *   **Hur vet Dashboarden om Sushi API:et?** -> Sushi API:et har `spring-boot-admin-starter-client` i sin `pom.xml` och URL:en till dashboarden i `application.properties`, vilket gör att den aktivt "ringer hem" till Dashboarden på port 9090 och anmäler sin existens via den öppna `/instances`-länken.
-*   **Var ligger er startdata?** -> I `src/main/resources/data.sql`.
+*   **Var ligger startdata?** -> I `src/main/resources/data.sql`.
