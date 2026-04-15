@@ -1,0 +1,50 @@
+2026-04-15T07:34:32.020+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-4] W.Sushi.API.controller.AdminController   : Admin requested all dishes.
+2026-04-15T07:43:35.727+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-4] W.Sushi.API.controller.AdminController   : Admin requested all dishes.
+2026-04-15T07:43:40.375+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-6] W.Sushi.API.controller.AdminController   : Admin created dish: Spicy Makrell Roll
+2026-04-15T07:51:24.826+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-6] W.Sushi.API.controller.AdminController   : Admin created dish: Spicy Makrell Roll
+2026-04-15T07:52:04.805+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-10] W.Sushi.API.controller.AdminController   : Admin updated customer ID: 1 (kalle123)
+2026-04-15T07:53:33.688+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-5] W.Sushi.API.controller.AdminController   : Admin requested all orders.
+2026-04-15T07:54:13.339+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-1] W.Sushi.API.controller.AdminController   : Admin requested all bookings.
+2026-04-15T08:14:02.998+02:00  INFO 2346024 --- [Wigell-Sushi-API] [http-nio-8582-exec-2] W.Sushi.API.controller.AdminController   : Admin created dish: Spicy Makrell Roll
+2026-04-15T08:25:10.271+02:00  INFO 2346024 --- [Wigell-Sushi-API] [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-04-15T08:25:10.274+02:00  INFO 2346024 --- [Wigell-Sushi-API] [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-04-15T08:25:12.300+02:00  INFO 2346024 --- [Wigell-Sushi-API] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-15T08:25:12.305+02:00  INFO 2346024 --- [Wigell-Sushi-API] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-04-15T08:25:12.307+02:00  INFO 2346024 --- [Wigell-Sushi-API] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-04-15T08:25:16.451+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] Wigell.Sushi.API.SushiApiApplication     : Starting SushiApiApplication using Java 26.0.2 with PID 270605 (/home/alex/Dokument/Skolprojekt/Wigell Sushi/sushi-api/target/classes started by alex in /home/alex/Dokument/Skolprojekt)
+2026-04-15T08:25:16.453+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] Wigell.Sushi.API.SushiApiApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-04-15T08:25:17.086+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-15T08:25:17.182+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 89 ms. Found 6 JPA repository interfaces.
+2026-04-15T08:25:17.658+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8582 (http)
+2026-04-15T08:25:17.667+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-15T08:25:17.667+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-04-15T08:25:17.692+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-15T08:25:17.692+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1212 ms
+2026-04-15T08:25:17.910+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-15T08:25:17.942+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-04-15T08:25:17.960+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-15T08:25:18.126+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-15T08:25:18.143+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-15T08:25:18.389+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2e20c20b
+2026-04-15T08:25:18.390+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-15T08:25:18.416+02:00  WARN 270605 --- [Wigell-Sushi-API] [main] o.h.e.j.e.i.JdbcEnvironmentInitiator     : HHH000339: Could not obtain connection metadata: java.sql.SQLSyntaxErrorException: Unknown column 'RESERVED' in 'WHERE'
+2026-04-15T08:25:18.424+02:00  WARN 270605 --- [Wigell-Sushi-API] [main] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-15T08:25:18.430+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-15T08:25:19.007+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-15T08:25:19.083+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-15T08:25:19.546+02:00  WARN 270605 --- [Wigell-Sushi-API] [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-15T08:25:19.572+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-04-15T08:25:19.943+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 15 endpoints beneath base path '/actuator'
+2026-04-15T08:25:20.434+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8582 (http) with context path '/'
+2026-04-15T08:25:20.444+02:00  INFO 270605 --- [Wigell-Sushi-API] [main] Wigell.Sushi.API.SushiApiApplication     : Started SushiApiApplication in 4.3 seconds (process running for 4.728)
+2026-04-15T08:25:20.849+02:00  INFO 270605 --- [Wigell-Sushi-API] [registrationTask1] d.c.b.a.c.r.ApplicationRegistrator       : Application registered itself as aad4712a48cc
+2026-04-15T08:25:20.854+02:00  INFO 270605 --- [Wigell-Sushi-API] [http-nio-8582-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-15T08:25:20.854+02:00  INFO 270605 --- [Wigell-Sushi-API] [http-nio-8582-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-04-15T08:25:20.855+02:00  INFO 270605 --- [Wigell-Sushi-API] [http-nio-8582-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
