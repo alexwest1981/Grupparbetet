@@ -16,13 +16,13 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 
 # IDEA / Eclipse
-.idea/
-*.iml
-*.iws
-.project
-.classpath
-.settings/
-.springBeans
+# .idea/
+#*.iml
+# *.iws
+# .project
+# .classpath
+# .settings/
+# .springBeans
 
 # OS generated files
 .DS_Store
